@@ -1,0 +1,7 @@
+micronaut:
+  application:
+    name: aerospikeDynamicQuerySpike
+aerospike:
+  hostname: localhost
+  port: 3000
+  namespace: test
