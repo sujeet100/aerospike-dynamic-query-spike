@@ -88,4 +88,8 @@ public class SearchParams {
             default -> throw new IllegalStateException("Unexpected value: " + secondaryIndexBin.type());
         };
     }
+
+    public boolean containsMobileNumber() {
+        return false;
+    }
 }

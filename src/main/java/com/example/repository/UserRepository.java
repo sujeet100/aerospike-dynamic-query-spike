@@ -16,6 +16,7 @@ import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.aerospike.client.exp.Exp.bin;
 import static com.aerospike.client.exp.Exp.eq;
 import static com.aerospike.client.exp.Exp.val;
 import static com.example.model.UserMeta.getBinMeta;
@@ -24,6 +25,11 @@ import static com.example.model.UserMeta.getBinMeta;
 public class UserRepository {
     @Inject
     AeroMapper aeroMapper;
+
+    public User getByIds(List<String> ids, SearchParams searchParams) {
+        QueryPolicy queryPolicy = getQueryPolicyWithExpressions(searchParams, SearchParams.ID);
+        return aeroMapper.read(queryPolicy, User.class, ids.toArray(String[]::new));
+    }
 
 
     public User getById(SearchParams searchParams) {
@@ -53,7 +59,7 @@ public class UserRepository {
                                     .stream()
                                     .map(e -> {
                                         BinMeta binMeta = getBinMeta(e.getKey());
-                                        return eq(Exp.bin(binMeta.name(), binMeta.type()), val(e.getValue()));
+                                        return getEqExp(binMeta, e.getValue());
                                     }).toArray(Exp[]::new);
         if (clauses.length == 0) {
             return new QueryPolicy();
@@ -71,6 +77,14 @@ public class UserRepository {
         aeroMapper.save(new User("2", "Kamthe", 22, "Mumbai", "US", "8888888888"));
         aeroMapper.save(new User("3", "Foo", 42, "Mumbai", "IN", "8888888888"));
         aeroMapper.getClient().createIndex(null, "test", "users", "age", "age", IndexType.NUMERIC);
-        aeroMapper.getClient().createIndex(null, "test", "users", "city", "city", IndexType.NUMERIC);
+        aeroMapper.getClient().createIndex(null, "test", "users", "city", "city", IndexType.STRING);
+    }
+
+    public Exp getEqExp(BinMeta binMeta, String value) {
+        return switch (binMeta.type()) {
+            case STRING -> eq(bin(binMeta.name(), binMeta.type()), val(value));
+            case INT -> eq(bin(binMeta.name(), binMeta.type()), val(Integer.parseInt(value)));
+            default -> throw new IllegalStateException("Unexpected value: " + binMeta.type());
+        };
     }
 }
